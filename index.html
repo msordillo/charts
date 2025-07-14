@@ -27,6 +27,15 @@
       border-radius: 12px;
       box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
       padding: 1rem;
+      transition: transform 0.5s ease-in-out, opacity 0.5s ease-in-out;
+    }
+    canvas.fade-out {
+      opacity: 0;
+      transform: scale(0.95);
+    }
+    canvas.fade-in {
+      opacity: 1;
+      transform: scale(1);
     }
     #backBtn {
       display: none;
@@ -51,7 +60,8 @@
   <button id="backBtn">⬅ Back</button>
 
   <script>
-    const ctx = document.getElementById('mainChart').getContext('2d');
+    const canvas = document.getElementById('mainChart');
+    const ctx = canvas.getContext('2d');
 
     const mainData = {
       labels: ['Original Content', 'Email Marketing', 'Existing Customers', 'Trade Shows', 'Paid Advertising'],
@@ -63,16 +73,16 @@
 
     const subBreakdowns = {
       'Blog Posts': {
-        labels: ['DFM Resources', 'Industry Topics', 'Material Topics', 'Part Topics', 'Company Updates'],
-        data: [40, 15, 20, 15, 10]
+        labels: ['Industry News', 'How-To Guides', 'Case Studies'],
+        data: [40, 30, 30]
       },
       'Landing Pages': {
-        labels: ['Service Pages', 'Part Pages', 'Industry Pages', 'Material Pages', 'Resources Pages'],
-        data: [20, 20, 20, 20, 20]
+        labels: ['Product Pages', 'Event Pages'],
+        data: [50, 50]
       },
       'Social Media': {
-        labels: ['LinkedIn', 'Facebook', 'Google Business'],
-        data: [33, 33, 33]
+        labels: ['LinkedIn', 'Instagram', 'YouTube'],
+        data: [40, 30, 30]
       }
     };
 
@@ -104,11 +114,26 @@
     let previousDataStack = [];
     let levelStack = ['main'];
 
+    function animateTransition(callback) {
+      canvas.classList.remove('fade-in');
+      canvas.classList.add('fade-out');
+      setTimeout(() => {
+        callback();
+        canvas.classList.remove('fade-out');
+        canvas.classList.add('fade-in');
+      }, 400);
+    }
+
     function renderChart(data) {
       chart = new Chart(ctx, {
         type: 'pie',
         data: data,
         options: {
+          animation: {
+            animateScale: true,
+            duration: 800,
+            easing: 'easeOutQuart'
+          },
           plugins: {
             tooltip: {
               callbacks: {
@@ -139,26 +164,30 @@
                 previousDataStack.push(this.data);
                 levelStack.push(label);
                 currentLevel = label;
-                chart.destroy();
-                renderChart({
-                  labels: breakdowns[label].labels,
-                  datasets: [{
-                    data: breakdowns[label].data,
-                    backgroundColor: ['#6366f1', '#3b82f6', '#f59e0b', '#10b981', '#ef4444']
-                  }]
+                animateTransition(() => {
+                  chart.destroy();
+                  renderChart({
+                    labels: breakdowns[label].labels,
+                    datasets: [{
+                      data: breakdowns[label].data,
+                      backgroundColor: ['#6366f1', '#3b82f6', '#f59e0b', '#10b981', '#ef4444']
+                    }]
+                  });
                 });
                 document.getElementById('backBtn').style.display = 'inline-block';
               } else if (currentLevel === 'Original Content' && subBreakdowns[label]) {
                 previousDataStack.push(this.data);
                 levelStack.push(label);
                 currentLevel = label;
-                chart.destroy();
-                renderChart({
-                  labels: subBreakdowns[label].labels,
-                  datasets: [{
-                    data: subBreakdowns[label].data,
-                    backgroundColor: ['#6366f1', '#3b82f6', '#f59e0b', '#10b981', '#ef4444']
-                  }]
+                animateTransition(() => {
+                  chart.destroy();
+                  renderChart({
+                    labels: subBreakdowns[label].labels,
+                    datasets: [{
+                      data: subBreakdowns[label].data,
+                      backgroundColor: ['#6366f1', '#3b82f6', '#f59e0b', '#10b981', '#ef4444']
+                    }]
+                  });
                 });
               }
             }
@@ -169,14 +198,16 @@
 
     document.getElementById('backBtn').addEventListener('click', () => {
       if (previousDataStack.length > 0) {
-        chart.destroy();
         let prevData = previousDataStack.pop();
         levelStack.pop();
         currentLevel = levelStack[levelStack.length - 1];
-        renderChart(prevData);
-        if (previousDataStack.length === 0) {
-          document.getElementById('backBtn').style.display = 'none';
-        }
+        animateTransition(() => {
+          chart.destroy();
+          renderChart(prevData);
+          if (previousDataStack.length === 0) {
+            document.getElementById('backBtn').style.display = 'none';
+          }
+        });
       }
     });
 
