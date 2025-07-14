@@ -27,6 +27,10 @@
       border-radius: 12px;
       box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
       padding: 1rem;
+      transition: transform 0.4s ease-in-out;
+    }
+    canvas.zoom-slice {
+      transform: scale(1.3);
     }
     #backBtn {
       display: none;
@@ -58,8 +62,7 @@
       labels: ['Original Content', 'Email Marketing', 'Existing Customers', 'Trade Shows', 'Paid Advertising'],
       datasets: [{
         data: [50, 10, 25, 10, 5],
-        backgroundColor: ['#6366f1', '#3b82f6', '#f59e0b', '#10b981', '#ef4444'],
-        offset: []
+        backgroundColor: ['#6366f1', '#3b82f6', '#f59e0b', '#10b981', '#ef4444']
       }]
     };
 
@@ -142,11 +145,12 @@
               let index = elements[0].index;
               let label = this.data.labels[index];
 
-              // Set offset for clicked slice to create explosion effect
-              chart.data.datasets[0].offset = chart.data.labels.map((_, i) => i === index ? 30 : 0);
-              chart.update();
+              // Add zoom class for a visual explosion toward user
+              canvas.classList.add('zoom-slice');
 
               setTimeout(() => {
+                canvas.classList.remove('zoom-slice');
+
                 if (currentLevel === 'main' && breakdowns[label]) {
                   previousDataStack.push(this.data);
                   levelStack.push(label);
@@ -173,7 +177,7 @@
                     }]
                   });
                 }
-              }, 600); // wait for offset animation
+              }, 500); // explosion animation duration
             }
           }
         }
