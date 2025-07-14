@@ -27,11 +27,6 @@
       border-radius: 12px;
       box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
       padding: 1rem;
-      transition: transform 0.5s ease-in-out, opacity 0.5s ease-in-out;
-    }
-    canvas.zoom {
-      transform: scale(1.5);
-      opacity: 0;
     }
     #backBtn {
       display: none;
@@ -63,7 +58,8 @@
       labels: ['Original Content', 'Email Marketing', 'Existing Customers', 'Trade Shows', 'Paid Advertising'],
       datasets: [{
         data: [50, 10, 25, 10, 5],
-        backgroundColor: ['#6366f1', '#3b82f6', '#f59e0b', '#10b981', '#ef4444']
+        backgroundColor: ['#6366f1', '#3b82f6', '#f59e0b', '#10b981', '#ef4444'],
+        offset: []
       }]
     };
 
@@ -110,14 +106,6 @@
     let previousDataStack = [];
     let levelStack = ['main'];
 
-    function animateZoom(callback) {
-      canvas.classList.add('zoom');
-      setTimeout(() => {
-        callback();
-        canvas.classList.remove('zoom');
-      }, 500);
-    }
-
     function renderChart(data) {
       chart = new Chart(ctx, {
         type: 'pie',
@@ -154,11 +142,15 @@
               let index = elements[0].index;
               let label = this.data.labels[index];
 
-              if (currentLevel === 'main' && breakdowns[label]) {
-                previousDataStack.push(this.data);
-                levelStack.push(label);
-                currentLevel = label;
-                animateZoom(() => {
+              // Set offset for clicked slice to create explosion effect
+              chart.data.datasets[0].offset = chart.data.labels.map((_, i) => i === index ? 30 : 0);
+              chart.update();
+
+              setTimeout(() => {
+                if (currentLevel === 'main' && breakdowns[label]) {
+                  previousDataStack.push(this.data);
+                  levelStack.push(label);
+                  currentLevel = label;
                   chart.destroy();
                   renderChart({
                     labels: breakdowns[label].labels,
@@ -167,13 +159,11 @@
                       backgroundColor: ['#6366f1', '#3b82f6', '#f59e0b', '#10b981', '#ef4444']
                     }]
                   });
-                });
-                document.getElementById('backBtn').style.display = 'inline-block';
-              } else if (currentLevel === 'Original Content' && subBreakdowns[label]) {
-                previousDataStack.push(this.data);
-                levelStack.push(label);
-                currentLevel = label;
-                animateZoom(() => {
+                  document.getElementById('backBtn').style.display = 'inline-block';
+                } else if (currentLevel === 'Original Content' && subBreakdowns[label]) {
+                  previousDataStack.push(this.data);
+                  levelStack.push(label);
+                  currentLevel = label;
                   chart.destroy();
                   renderChart({
                     labels: subBreakdowns[label].labels,
@@ -182,8 +172,8 @@
                       backgroundColor: ['#6366f1', '#3b82f6', '#f59e0b', '#10b981', '#ef4444']
                     }]
                   });
-                });
-              }
+                }
+              }, 600); // wait for offset animation
             }
           }
         }
@@ -195,13 +185,11 @@
         let prevData = previousDataStack.pop();
         levelStack.pop();
         currentLevel = levelStack[levelStack.length - 1];
-        animateZoom(() => {
-          chart.destroy();
-          renderChart(prevData);
-          if (previousDataStack.length === 0) {
-            document.getElementById('backBtn').style.display = 'none';
-          }
-        });
+        chart.destroy();
+        renderChart(prevData);
+        if (previousDataStack.length === 0) {
+          document.getElementById('backBtn').style.display = 'none';
+        }
       }
     });
 
