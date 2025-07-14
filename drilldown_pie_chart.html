@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Drilldown Pie Chart</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
+  <style>
+    body {
+      font-family: 'Inter', sans-serif;
+      background-color: #f9fafb;
+      margin: 0;
+      padding: 2rem;
+      text-align: center;
+    }
+    h1 {
+      font-weight: 600;
+      margin-bottom: 1rem;
+      color: #333;
+    }
+    canvas {
+      max-width: 600px;
+      margin: 20px auto;
+      display: block;
+      background-color: white;
+      border-radius: 12px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+      padding: 1rem;
+    }
+    #backBtn {
+      display: none;
+      margin: 20px auto;
+      padding: 0.75rem 1.5rem;
+      background-color: #6366f1;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-size: 1rem;
+      cursor: pointer;
+      transition: background-color 0.3s ease;
+    }
+    #backBtn:hover {
+      background-color: #4f46e5;
+    }
+  </style>
+</head>
+<body>
+  <h1>Marketing Source Breakdown</h1>
+  <canvas id="mainChart"></canvas>
+  <button id="backBtn">⬅ Back</button>
+
+  <script>
+    const ctx = document.getElementById('mainChart').getContext('2d');
+
+    const mainData = {
+      labels: ['Original Content', 'Email Marketing', 'Existing Customers', 'Trade Shows', 'Paid Advertising'],
+      datasets: [{
+        data: [50, 10, 25, 10, 5],
+        backgroundColor: ['#6366f1', '#3b82f6', '#f59e0b', '#10b981', '#ef4444']
+      }]
+    };
+
+    const subBreakdowns = {
+      'Blog Posts': {
+        labels: ['Industry News', 'How-To Guides', 'Case Studies'],
+        data: [40, 30, 30]
+      },
+      'Landing Pages': {
+        labels: ['Product Pages', 'Event Pages'],
+        data: [50, 50]
+      },
+      'Social Media': {
+        labels: ['LinkedIn', 'Instagram', 'YouTube'],
+        data: [40, 30, 30]
+      }
+    };
+
+    const breakdowns = {
+      'Original Content': {
+        labels: ['Blog Posts', 'Landing Pages', 'Social Media'],
+        data: [33, 33, 33]
+      },
+      'Email Marketing': {
+        labels: ['Newsletters', 'Strategic Drip Campaigns', 'Trade Show Invites & Follow Ups'],
+        data: [25, 50, 25]
+      },
+      'Existing Customers': {
+        labels: ['Quality Rating', 'On Time Delivery', 'Quote Response Time'],
+        data: [33, 33, 33]
+      },
+      'Trade Shows': {
+        labels: ['Booth Leads', 'Speaking Engagements'],
+        data: [5, 5]
+      },
+      'Paid Advertising': {
+        labels: ['Google Ads', 'Microsoft Ads', 'LinkedIn Ads'],
+        data: [45, 45, 10]
+      }
+    };
+
+    let chart;
+    let currentLevel = 'main';
+    let previousDataStack = [];
+    let levelStack = ['main'];
+
+    function renderChart(data) {
+      chart = new Chart(ctx, {
+        type: 'pie',
+        data: data,
+        options: {
+          plugins: {
+            tooltip: {
+              callbacks: {
+                label: function(context) {
+                  let label = context.label || '';
+                  let value = context.raw;
+                  let total = context.chart._metasets[0].total;
+                  let percentage = ((value / total) * 100).toFixed(1);
+                  return `${label}: ${percentage}%`;
+                }
+              }
+            },
+            legend: {
+              labels: {
+                color: '#374151',
+                font: {
+                  size: 14
+                }
+              }
+            }
+          },
+          onClick: function(evt, elements) {
+            if (elements.length > 0) {
+              let index = elements[0].index;
+              let label = this.data.labels[index];
+
+              if (currentLevel === 'main' && breakdowns[label]) {
+                previousDataStack.push(this.data);
+                levelStack.push(label);
+                currentLevel = label;
+                chart.destroy();
+                renderChart({
+                  labels: breakdowns[label].labels,
+                  datasets: [{
+                    data: breakdowns[label].data,
+                    backgroundColor: ['#6366f1', '#3b82f6', '#f59e0b', '#10b981', '#ef4444']
+                  }]
+                });
+                document.getElementById('backBtn').style.display = 'inline-block';
+              } else if (currentLevel === 'Original Content' && subBreakdowns[label]) {
+                previousDataStack.push(this.data);
+                levelStack.push(label);
+                currentLevel = label;
+                chart.destroy();
+                renderChart({
+                  labels: subBreakdowns[label].labels,
+                  datasets: [{
+                    data: subBreakdowns[label].data,
+                    backgroundColor: ['#6366f1', '#3b82f6', '#f59e0b', '#10b981', '#ef4444']
+                  }]
+                });
+              }
+            }
+          }
+        }
+      });
+    }
+
+    document.getElementById('backBtn').addEventListener('click', () => {
+      if (previousDataStack.length > 0) {
+        chart.destroy();
+        let prevData = previousDataStack.pop();
+        levelStack.pop();
+        currentLevel = levelStack[levelStack.length - 1];
+        renderChart(prevData);
+        if (previousDataStack.length === 0) {
+          document.getElementById('backBtn').style.display = 'none';
+        }
+      }
+    });
+
+    renderChart(mainData);
+  </script>
+</body>
+</html>
